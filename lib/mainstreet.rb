@@ -4,7 +4,7 @@ require "geocoder"
 module Mainstreet
   class << self
     attr_writer :lookup
-
+    
     def lookup
       @lookup ||= begin
         if ENV["SMARTY_STREETS_AUTH_ID"] && ENV["SMARTY_STREETS_AUTH_TOKEN"]
@@ -20,10 +20,12 @@ module Mainstreet
       class_eval do
         serialize :original_attributes
         serialize :verification_info
+        ## allow for addresses to be set via a db:seeds file
+        attr_accessor :skip_validations
 
-        validates :street, presence: true
-        validate :verify_address, if: -> { address_fields_changed? }
-        before_save :standardize_address, if: -> { address_fields_changed? }
+        validates :street, presence: true, unless: :skip_validations
+        validate :verify_address, if: -> { address_fields_changed? }, unless: :skip_validations
+        before_save :standardize_address, if: -> { address_fields_changed? }, unless: :skip_validations
 
         def verify_address
           if zip_code.blank? && (city.blank? || state.blank?)
